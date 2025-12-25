@@ -51,6 +51,9 @@ export async function fetchWithAuth(url: string, token: string, options: Request
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: response.statusText }));
+    if (response.status === 403 || response.status === 401) {
+      throw new Error('Token lacks required permissions. Please use a classic token with repo and delete_repo scopes.');
+    }
     throw new Error(error.message || `HTTP ${response.status}`);
   }
   
