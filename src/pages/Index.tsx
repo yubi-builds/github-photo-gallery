@@ -75,16 +75,16 @@ const Index = () => {
                   onKeyDown={(e) => e.key === 'Enter' && handleTokenLogin()}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Create a token at{' '}
+                  Create a <strong>classic</strong> token at{' '}
                   <a 
-                    href="https://github.com/settings/tokens/new?scopes=repo" 
+                    href="https://github.com/settings/tokens/new?scopes=repo,delete_repo" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="underline"
                   >
                     github.com/settings/tokens
                   </a>
-                  {' '}with <code className="bg-secondary px-1 rounded">repo</code> scope.
+                  {' '}with <code className="bg-secondary px-1 rounded">repo</code> and <code className="bg-secondary px-1 rounded">delete_repo</code> scopes.
                 </p>
               </div>
               
