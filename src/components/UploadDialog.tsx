@@ -23,13 +23,19 @@ import { toast } from 'sonner';
 import { Loader2, Upload, FolderPlus, Image as ImageIcon, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
+interface UploadedFile {
+  name: string;
+  path: string;
+  localUrl: string;
+}
+
 interface UploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   owner: string;
   repo: string;
   folders: RepoContent[];
-  onUploaded: () => void;
+  onUploaded: (uploadedFiles: UploadedFile[]) => void;
 }
 
 export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploaded }: UploadDialogProps) {
@@ -60,11 +66,17 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
     setIsUploading(true);
     setUploadProgress(0);
 
+    const uploadedFiles: UploadedFile[] = [];
+
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const base64 = await fileToBase64(file);
         const path = folderPath ? `${folderPath}/${file.name}` : file.name;
+        
+        // Create local URL for immediate display
+        const localUrl = URL.createObjectURL(file);
+        uploadedFiles.push({ name: file.name, path, localUrl });
         
         await uploadFile(
           token,
@@ -79,7 +91,7 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
       }
 
       toast.success(`Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`);
-      onUploaded();
+      onUploaded(uploadedFiles);
       onOpenChange(false);
       setFiles([]);
       setSelectedFolder('');
@@ -87,6 +99,8 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
       setCreateNewFolder(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload files');
+      // Revoke any created URLs on error
+      uploadedFiles.forEach(f => URL.revokeObjectURL(f.localUrl));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

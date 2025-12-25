@@ -57,10 +57,10 @@ export default function Repository() {
     }
   }, [token, authLoading, navigate]);
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
     if (!token || !owner || !repo) return;
     
-    setIsLoading(true);
+    if (showLoading) setIsLoading(true);
     try {
       const [imagesData, contentsData] = await Promise.all([
         getAllImages(token, owner, repo),
@@ -74,6 +74,24 @@ export default function Repository() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleUploaded = (uploadedFiles: { name: string; path: string; localUrl: string }[]) => {
+    // Immediately add uploaded images to UI with local URLs
+    const newImages: ImageFile[] = uploadedFiles.map((file, index) => ({
+      name: file.name,
+      path: file.path,
+      sha: `temp-${Date.now()}-${index}`,
+      size: 0,
+      type: 'file' as const,
+      download_url: file.localUrl,
+      html_url: '',
+    }));
+    
+    setImages(prev => [...newImages, ...prev]);
+    
+    // Background refresh to get real data after a short delay
+    setTimeout(() => fetchData(false), 2000);
   };
 
   useEffect(() => {
@@ -256,7 +274,7 @@ export default function Repository() {
           owner={owner}
           repo={repo}
           folders={folders}
-          onUploaded={fetchData}
+          onUploaded={handleUploaded}
         />
       )}
 
