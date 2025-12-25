@@ -119,10 +119,13 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
             <Label>Destination Folder</Label>
             <div className="flex gap-2">
               <Select
-                value={createNewFolder ? '__new__' : selectedFolder}
+                value={createNewFolder ? '__new__' : (selectedFolder || '__root__')}
                 onValueChange={(value) => {
                   if (value === '__new__') {
                     setCreateNewFolder(true);
+                    setSelectedFolder('');
+                  } else if (value === '__root__') {
+                    setCreateNewFolder(false);
                     setSelectedFolder('');
                   } else {
                     setCreateNewFolder(false);
@@ -134,7 +137,7 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
                   <SelectValue placeholder="Root folder" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Root folder</SelectItem>
+                  <SelectItem value="__root__">Root folder</SelectItem>
                   {folders.map((folder) => (
                     <SelectItem key={folder.path} value={folder.path}>
                       {folder.name}
