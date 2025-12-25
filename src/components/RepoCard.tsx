@@ -1,6 +1,5 @@
 import { Repository, updateRepoVisibility, deleteRepo } from '@/lib/github';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Folder, Lock, Unlock, MoreVertical, Trash2, ExternalLink, Eye, EyeOff, ImageIcon } from 'lucide-react';
+import { Folder, Lock, Globe, MoreHorizontal, Trash2, ExternalLink, Eye, EyeOff, ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -70,91 +69,81 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
 
   return (
     <>
-      <Card className="glass-card glow-border group overflow-hidden transition-all duration-300 hover:border-primary/30">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <Folder className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                  {repo.name}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Updated {formatDistanceToNow(new Date(repo.updated_at), { addSuffix: true })}
-                </p>
-              </div>
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleToggleVisibility} disabled={isUpdatingVisibility}>
-                  {repo.private ? (
-                    <>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Make Public
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="mr-2 h-4 w-4" />
-                      Make Private
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <a href={repo.html_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View on GitHub
-                  </a>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className="card-minimal p-4 group transition-all">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2.5">
+            <Folder className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-medium text-sm truncate">{repo.name}</h3>
           </div>
-        </CardHeader>
-        
-        <CardContent className="pb-3">
-          {repo.description ? (
-            <p className="text-sm text-muted-foreground line-clamp-2">{repo.description}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground/50 italic">No description</p>
-          )}
-        </CardContent>
-        
-        <CardFooter className="flex items-center justify-between pt-3 border-t border-border/50">
-          <Badge variant={repo.private ? 'secondary' : 'outline'} className="gap-1.5">
-            {repo.private ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-            {repo.private ? 'Private' : 'Public'}
-          </Badge>
           
-          <Button asChild variant="ghost" size="sm" className="gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleToggleVisibility} disabled={isUpdatingVisibility}>
+                {repo.private ? (
+                  <>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Make Public
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="mr-2 h-4 w-4" />
+                    Make Private
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={repo.html_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View on GitHub
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        <p className="text-xs text-muted-foreground mb-3 line-clamp-1">
+          {repo.description || 'No description'}
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs font-normal gap-1">
+              {repo.private ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
+              {repo.private ? 'Private' : 'Public'}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(repo.updated_at), { addSuffix: true })}
+            </span>
+          </div>
+          
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
             <Link to={`/repo/${repo.owner.login}/${repo.name}`}>
-              <ImageIcon className="h-4 w-4" />
-              View Photos
+              <ImageIcon className="h-3 w-3 mr-1" />
+              Photos
             </Link>
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Repository</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{repo.name}</strong>? This action cannot be undone and all files will be permanently removed.
+              Are you sure you want to delete <strong>{repo.name}</strong>? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
