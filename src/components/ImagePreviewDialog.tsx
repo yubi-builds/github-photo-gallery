@@ -1,4 +1,6 @@
 import { ImageFile, downloadFile } from '@/lib/github';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthenticatedImage } from '@/components/AuthenticatedImage';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +11,15 @@ import { Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
 interface ImagePreviewDialogProps {
   image: ImageFile | null;
   images: ImageFile[];
+  owner: string;
+  repo: string;
   onClose: () => void;
   onNavigate: (image: ImageFile) => void;
 }
 
-export function ImagePreviewDialog({ image, images, onClose, onNavigate }: ImagePreviewDialogProps) {
+export function ImagePreviewDialog({ image, images, owner, repo, onClose, onNavigate }: ImagePreviewDialogProps) {
+  const { token } = useAuth();
+  
   if (!image) return null;
 
   const currentIndex = images.findIndex(img => img.sha === image.sha);
@@ -22,7 +28,7 @@ export function ImagePreviewDialog({ image, images, onClose, onNavigate }: Image
 
   const handleDownload = () => {
     if (image.download_url) {
-      downloadFile(image.download_url, image.name);
+      downloadFile(image.download_url, image.name, token || undefined);
     }
   };
 
@@ -63,8 +69,12 @@ export function ImagePreviewDialog({ image, images, onClose, onNavigate }: Image
 
           {/* Image */}
           <div className="flex items-center justify-center p-16 min-h-[60vh]">
-            <img
-              src={image.download_url}
+            <AuthenticatedImage
+              owner={owner}
+              repo={repo}
+              path={image.path}
+              sha={image.sha}
+              fallbackUrl={image.download_url}
               alt={image.name}
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />

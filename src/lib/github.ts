@@ -171,8 +171,9 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export async function downloadFile(url: string, filename: string): Promise<void> {
-  const response = await fetch(url);
+export async function downloadFile(url: string, filename: string, token?: string): Promise<void> {
+  const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
   const blob = await response.blob();
   const blobUrl = URL.createObjectURL(blob);
   
@@ -185,11 +186,10 @@ export async function downloadFile(url: string, filename: string): Promise<void>
   URL.revokeObjectURL(blobUrl);
 }
 
-export async function downloadMultipleFiles(files: ImageFile[]): Promise<void> {
+export async function downloadMultipleFiles(files: ImageFile[], token?: string): Promise<void> {
   for (const file of files) {
     if (file.download_url) {
-      await downloadFile(file.download_url, file.name);
-      // Small delay to prevent overwhelming the browser
+      await downloadFile(file.download_url, file.name, token);
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
@@ -197,4 +197,73 @@ export async function downloadMultipleFiles(files: ImageFile[]): Promise<void> {
 
 export async function getUser(token: string) {
   return fetchWithAuth(`${API_BASE}/user`, token);
+}
+
+// Cache for authenticated image URLs
+const imageCache = new Map<string, string>();
+
+export async function getAuthenticatedImageUrl(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  sha: string
+): Promise<string> {
+  const cacheKey = `${owner}/${repo}/${sha}`;
+  
+  if (imageCache.has(cacheKey)) {
+    return imageCache.get(cacheKey)!;
+  }
+
+  try {
+    // Fetch the blob content via GitHub API
+    const response = await fetch(`${API_BASE}/repos/${owner}/${repo}/git/blobs/${sha}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch image');
+    }
+
+    const data = await response.json();
+    const base64Content = data.content.replace(/\n/g, '');
+    
+    // Determine MIME type from path
+    const ext = path.split('.').pop()?.toLowerCase() || 'png';
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      bmp: 'image/bmp',
+      ico: 'image/x-icon',
+    };
+    const mimeType = mimeTypes[ext] || 'image/png';
+
+    // Convert base64 to blob URL
+    const byteCharacters = atob(base64Content);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    imageCache.set(cacheKey, blobUrl);
+    return blobUrl;
+  } catch (error) {
+    console.error('Error fetching authenticated image:', error);
+    throw error;
+  }
+}
+
+export function clearImageCache() {
+  imageCache.forEach(url => URL.revokeObjectURL(url));
+  imageCache.clear();
 }
