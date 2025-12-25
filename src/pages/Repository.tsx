@@ -121,7 +121,7 @@ export default function Repository() {
   const handleSingleDownload = async (image: ImageFile) => {
     if (image.download_url) {
       try {
-        await downloadFile(image.download_url, image.name);
+        await downloadFile(image.download_url, image.name, token || undefined);
         toast.success(`Downloaded ${image.name}`);
       } catch {
         toast.error('Failed to download');
@@ -135,7 +135,7 @@ export default function Repository() {
 
     setIsDownloading(true);
     try {
-      await downloadMultipleFiles(selectedFiles);
+      await downloadMultipleFiles(selectedFiles, token || undefined);
       toast.success(`Downloaded ${selectedFiles.length} files`);
       setSelectedImages(new Set());
     } catch {
@@ -243,6 +243,8 @@ export default function Repository() {
               <ImageCard
                 key={image.sha}
                 image={image}
+                owner={owner!}
+                repo={repo!}
                 isSelected={selectedImages.has(image.sha)}
                 onSelect={toggleImageSelection}
                 onDownload={handleSingleDownload}
@@ -282,6 +284,8 @@ export default function Repository() {
       <ImagePreviewDialog
         image={previewImage}
         images={images}
+        owner={owner!}
+        repo={repo!}
         onClose={() => setPreviewImage(null)}
         onNavigate={setPreviewImage}
       />

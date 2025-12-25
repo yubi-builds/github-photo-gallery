@@ -3,9 +3,12 @@ import { cn } from '@/lib/utils';
 import { Check, Download, Trash2, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { AuthenticatedImage } from '@/components/AuthenticatedImage';
 
 interface ImageCardProps {
   image: ImageFile;
+  owner: string;
+  repo: string;
   isSelected: boolean;
   onSelect: (image: ImageFile) => void;
   onDownload: (image: ImageFile) => void;
@@ -14,7 +17,9 @@ interface ImageCardProps {
 }
 
 export function ImageCard({ 
-  image, 
+  image,
+  owner,
+  repo,
   isSelected, 
   onSelect, 
   onDownload, 
@@ -42,8 +47,12 @@ export function ImageCard({
       )}
       
       {/* Image */}
-      <img
-        src={image.download_url}
+      <AuthenticatedImage
+        owner={owner}
+        repo={repo}
+        path={image.path}
+        sha={image.sha}
+        fallbackUrl={image.download_url}
         alt={image.name}
         className={cn(
           "aspect-square object-cover w-full transition-transform duration-200",
