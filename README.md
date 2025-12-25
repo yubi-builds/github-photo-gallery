@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# OctoLens
 
-## Project info
+A modern, responsive web application built with React and Vite that allows users to view and manage photos from GitHub repositories. This project uses [shadcn-ui](https://ui.shadcn.com/) for a premium, accessible user interface.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **GitHub Authentication**: Secure login via GitHub OAuth.
+- **Dashboard**: View your repositories and profile information.
+- **Repository View**: Browse images within specific repositories.
+- **Responsive Design**: Optimized for both desktop and mobile devices.
+- **Dark Mode Support**: Built-in support for light and dark themes.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Framework**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn-ui](https://ui.shadcn.com/)
+- **State Management**: React Context + TanStack Query (React Query)
+- **Routing**: React Router DOM
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js (v18 or higher recommended)
+- npm (or yarn/bun)
+- A GitHub OAuth App (Client ID required)
 
-**Use your preferred IDE**
+## Installation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Clone the repository**
+   ```bash
+   git clone git@github.com:yubi-builds/github-photo-gallery.git
+   cd github-photo-gallery
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Follow these steps:
+3. **Configuration**
+   Open `src/contexts/AuthContext.tsx` and replace `YOUR_GITHUB_CLIENT_ID` with your actual GitHub OAuth Client ID.
+   
+   > **Note**: For a production app, it is highly recommended to move this to an environment variable (e.g., `VITE_GITHUB_CLIENT_ID` in a `.env` file).
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173` (or the port shown in your terminal).
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Building for Production
 
-# Step 3: Install the necessary dependencies.
-npm i
+To create a production build:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+The output will be in the `dist` directory. You can preview the build locally using:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run preview
+```
 
-**Use GitHub Codespaces**
+## Docker
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+This project includes a Dockerfile for containerized deployment using Nginx.
 
-## What technologies are used for this project?
+### Build and Run with Docker
 
-This project is built with:
+1. **Build the image**
+   ```bash
+   docker build -t github-photo-gallery .
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Run the container**
+   ```bash
+   docker run -p 8080:80 github-photo-gallery
+   ```
+   Access the app at `http://localhost:8080`.
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[MIT](LICENSE) (Suggested - please verify)

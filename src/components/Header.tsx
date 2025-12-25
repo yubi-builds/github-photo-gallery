@@ -20,7 +20,7 @@ export function Header() {
       <div className="container flex h-14 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          <span className="font-semibold">InfiPhotos</span>
+          <span className="font-semibold">OctoLens</span>
         </Link>
 
         <div className="flex items-center gap-2">

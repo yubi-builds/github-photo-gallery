@@ -53,9 +53,7 @@ const Index = () => {
           </div>
           
           {/* Heading */}
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3 animate-slide-up">
-            InfiPhotos
-          </h1>
+            OctoLens
           
           <p className="text-muted-foreground mb-8 animate-slide-up stagger-1">
             Store and manage your photos using GitHub repositories. Simple, free, and under your control.
