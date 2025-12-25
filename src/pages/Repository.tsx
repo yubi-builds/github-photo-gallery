@@ -22,8 +22,7 @@ import {
   ImageIcon, 
   ChevronLeft, 
   CheckSquare, 
-  Square,
-  Trash2
+  Square
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -71,7 +70,7 @@ export default function Repository() {
       setImages(imagesData);
       setFolders(contentsData.filter(item => item.type === 'dir'));
     } catch (error) {
-      toast.error('Failed to load repository contents');
+      toast.error('Failed to load repository');
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +106,7 @@ export default function Repository() {
         await downloadFile(image.download_url, image.name);
         toast.success(`Downloaded ${image.name}`);
       } catch {
-        toast.error('Failed to download file');
+        toast.error('Failed to download');
       }
     }
   };
@@ -119,10 +118,10 @@ export default function Repository() {
     setIsDownloading(true);
     try {
       await downloadMultipleFiles(selectedFiles);
-      toast.success(`Downloaded ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}`);
+      toast.success(`Downloaded ${selectedFiles.length} files`);
       setSelectedImages(new Set());
     } catch {
-      toast.error('Failed to download files');
+      toast.error('Failed to download');
     } finally {
       setIsDownloading(false);
     }
@@ -138,7 +137,7 @@ export default function Repository() {
       setDeleteTarget(null);
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete file');
+      toast.error('Failed to delete');
     } finally {
       setIsDeleting(false);
     }
@@ -147,7 +146,7 @@ export default function Repository() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -158,17 +157,17 @@ export default function Repository() {
       
       <main className="container px-4 py-8">
         {/* Breadcrumb & Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
               <Link to="/dashboard">
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{repo}</h1>
-              <p className="text-muted-foreground text-sm">
-                {images.length} image{images.length !== 1 ? 's' : ''}
+              <h1 className="text-xl font-semibold">{repo}</h1>
+              <p className="text-sm text-muted-foreground">
+                {images.length} {images.length === 1 ? 'image' : 'images'}
               </p>
             </div>
           </div>
@@ -176,20 +175,21 @@ export default function Repository() {
           <div className="flex items-center gap-2">
             {selectedImages.size > 0 && (
               <Button 
-                variant="secondary" 
+                variant="outline" 
+                size="sm"
                 onClick={handleBulkDownload}
                 disabled={isDownloading}
               >
                 {isDownloading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4" />
                 )}
                 Download ({selectedImages.size})
               </Button>
             )}
-            <Button onClick={() => setShowUploadDialog(true)}>
-              <Upload className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={() => setShowUploadDialog(true)}>
+              <Upload className="h-4 w-4" />
               Upload
             </Button>
           </div>
@@ -197,17 +197,17 @@ export default function Repository() {
 
         {/* Selection controls */}
         {images.length > 0 && (
-          <div className="flex items-center gap-4 mb-6 pb-4 border-b border-border/50">
-            <Button variant="ghost" size="sm" onClick={selectAll} className="gap-2">
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={selectAll} className="h-8 text-xs">
               {selectedImages.size === images.length ? (
-                <CheckSquare className="h-4 w-4" />
+                <CheckSquare className="h-4 w-4 mr-1" />
               ) : (
-                <Square className="h-4 w-4" />
+                <Square className="h-4 w-4 mr-1" />
               )}
-              {selectedImages.size === images.length ? 'Deselect All' : 'Select All'}
+              {selectedImages.size === images.length ? 'Deselect all' : 'Select all'}
             </Button>
             {selectedImages.size > 0 && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {selectedImages.size} selected
               </span>
             )}
@@ -216,8 +216,8 @@ export default function Repository() {
 
         {/* Images grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : images.length > 0 ? (
           <div className="image-grid">
@@ -234,15 +234,15 @@ export default function Repository() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No images yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Upload your first photos to this repository
+          <div className="text-center py-16">
+            <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <p className="font-medium mb-1">No images</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload your first photos
             </p>
-            <Button onClick={() => setShowUploadDialog(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Photos
+            <Button size="sm" onClick={() => setShowUploadDialog(true)}>
+              <Upload className="h-4 w-4" />
+              Upload
             </Button>
           </div>
         )}
@@ -274,8 +274,7 @@ export default function Repository() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Image</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? 
-              This action cannot be undone.
+              Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

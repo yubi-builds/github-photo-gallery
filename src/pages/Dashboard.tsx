@@ -52,7 +52,7 @@ export default function Dashboard() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -63,17 +63,17 @@ export default function Dashboard() {
       
       <main className="container px-4 py-8">
         {/* Page header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Your Repositories</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your photo collections stored on GitHub
+            <h1 className="text-xl font-semibold">Repositories</h1>
+            <p className="text-sm text-muted-foreground">
+              {repos.length} {repos.length === 1 ? 'repository' : 'repositories'}
             </p>
           </div>
           
-          <Button onClick={() => setShowCreateDialog(true)} className="shrink-0">
-            <Plus className="h-4 w-4 mr-2" />
-            New Repository
+          <Button onClick={() => setShowCreateDialog(true)} size="sm">
+            <Plus className="h-4 w-4" />
+            New
           </Button>
         </div>
 
@@ -81,42 +81,38 @@ export default function Dashboard() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search repositories..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-secondary/50"
+            className="pl-9 h-9"
           />
         </div>
 
         {/* Repos grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : filteredRepos.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredRepos.map((repo) => (
               <RepoCard key={repo.id} repo={repo} onUpdate={fetchRepos} />
             ))}
           </div>
         ) : repos.length > 0 ? (
-          <div className="text-center py-20">
-            <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No matches found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search query
-            </p>
+          <div className="text-center py-16">
+            <p className="text-sm text-muted-foreground">No results found</p>
           </div>
         ) : (
-          <div className="text-center py-20">
-            <FolderOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No repositories yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Create your first repository to start managing your photos
+          <div className="text-center py-16">
+            <FolderOpen className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <p className="font-medium mb-1">No repositories</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create your first repository
             </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Repository
+            <Button onClick={() => setShowCreateDialog(true)} size="sm">
+              <Plus className="h-4 w-4" />
+              New Repository
             </Button>
           </div>
         )}
