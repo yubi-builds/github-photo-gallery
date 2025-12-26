@@ -38,9 +38,10 @@ import { formatDistanceToNow } from 'date-fns';
 interface RepoCardProps {
   repo: Repository;
   onUpdate: () => void;
+  onRename: (oldName: string, newName: string) => void;
 }
 
-export function RepoCard({ repo, onUpdate }: RepoCardProps) {
+export function RepoCard({ repo, onUpdate, onRename }: RepoCardProps) {
   const { token } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -67,12 +68,16 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
   const handleRename = async () => {
     if (!token || !newName.trim() || newName === repo.name) return;
     
+    const oldName = repo.name;
+    const trimmedNewName = newName.trim();
+    
     setIsRenaming(true);
     try {
-      await renameRepo(token, repo.owner.login, repo.name, newName.trim());
-      toast.success(`Repository renamed to ${newName.trim()}`);
+      await renameRepo(token, repo.owner.login, oldName, trimmedNewName);
+      // Optimistic update - immediately update in parent state
+      onRename(oldName, trimmedNewName);
+      toast.success(`Repository renamed to ${trimmedNewName}`);
       setShowRenameDialog(false);
-      onUpdate();
     } catch (error) {
       toast.error('Failed to rename repository');
     } finally {

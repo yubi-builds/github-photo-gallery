@@ -38,6 +38,14 @@ export default function Dashboard() {
     }
   };
 
+  const handleRepoRename = (oldName: string, newName: string) => {
+    setRepos(prev => prev.map(repo => 
+      repo.name === oldName 
+        ? { ...repo, name: newName } 
+        : repo
+    ));
+  };
+
   useEffect(() => {
     if (token) {
       fetchRepos();
@@ -96,7 +104,7 @@ export default function Dashboard() {
         ) : filteredRepos.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredRepos.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} onUpdate={fetchRepos} />
+              <RepoCard key={repo.id} repo={repo} onUpdate={fetchRepos} onRename={handleRepoRename} />
             ))}
           </div>
         ) : repos.length > 0 ? (
