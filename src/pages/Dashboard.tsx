@@ -38,11 +38,9 @@ export default function Dashboard() {
     }
   };
 
-  const handleRepoRename = (oldName: string, newName: string) => {
+  const handleRepoRename = (oldName: string, updatedRepo: Repository) => {
     setRepos(prev => prev.map(repo => 
-      repo.name === oldName 
-        ? { ...repo, name: newName } 
-        : repo
+      repo.name === oldName ? updatedRepo : repo
     ));
   };
 
