@@ -81,7 +81,7 @@ export default function Repository() {
     const newImages: ImageFile[] = uploadedFiles.map((file, index) => ({
       name: file.name,
       path: file.path,
-      sha: `temp-${Date.now()}-${index}`,
+      sha: `temp-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
       size: 0,
       type: 'file' as const,
       download_url: file.localUrl,
@@ -90,9 +90,18 @@ export default function Repository() {
     
     setImages(prev => [...newImages, ...prev]);
     
-    // Background refresh to get real data
-    setTimeout(() => fetchData(false), 1500);
-  }, [fetchData]);
+    // Background refresh to get real data - replace temp images with real ones
+    setTimeout(async () => {
+      if (!token || !owner || !repo) return;
+      try {
+        const imagesData = await getAllImages(token, owner, repo);
+        // Replace all images to avoid duplicates
+        setImages(imagesData);
+      } catch (error) {
+        console.error('Failed to refresh images', error);
+      }
+    }, 2000);
+  }, [token, owner, repo]);
 
   useEffect(() => {
     if (token && owner && repo) {
