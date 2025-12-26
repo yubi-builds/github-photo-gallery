@@ -162,7 +162,7 @@ export default function Repository() {
     try {
       await deleteFile(token, owner, repo, deleteTarget.path, deleteTarget.sha, `Delete ${deleteTarget.name}`);
       
-      // Optimistic UI update - remove from state immediately
+      // Remove from state - API succeeded so no refresh needed
       setImages(prev => prev.filter(img => img.sha !== deleteTarget.sha));
       setSelectedImages(prev => {
         const newSet = new Set(prev);
@@ -172,9 +172,6 @@ export default function Repository() {
       
       toast.success(`Deleted ${deleteTarget.name}`);
       setDeleteTarget(null);
-      
-      // Background refresh to ensure consistency
-      setTimeout(() => fetchData(false), 1000);
     } catch (error) {
       toast.error('Failed to delete');
       // Refresh on error to restore correct state
