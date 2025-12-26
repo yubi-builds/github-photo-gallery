@@ -1,7 +1,9 @@
-import { Repository, updateRepoVisibility, deleteRepo } from '@/lib/github';
+import { Repository, updateRepoVisibility, deleteRepo, renameRepo } from '@/lib/github';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +21,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Folder, Lock, Globe, MoreHorizontal, Trash2, ExternalLink, Eye, EyeOff, ImageIcon } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Folder, Lock, Globe, MoreHorizontal, Trash2, ExternalLink, Eye, EyeOff, ImageIcon, Pencil, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -34,7 +44,10 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
   const { token } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState(repo.name);
 
   const handleToggleVisibility = async () => {
     if (!token) return;
@@ -48,6 +61,22 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
       toast.error('Failed to update visibility');
     } finally {
       setIsUpdatingVisibility(false);
+    }
+  };
+
+  const handleRename = async () => {
+    if (!token || !newName.trim() || newName === repo.name) return;
+    
+    setIsRenaming(true);
+    try {
+      await renameRepo(token, repo.owner.login, repo.name, newName.trim());
+      toast.success(`Repository renamed to ${newName.trim()}`);
+      setShowRenameDialog(false);
+      onUpdate();
+    } catch (error) {
+      toast.error('Failed to rename repository');
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -67,6 +96,11 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
     }
   };
 
+  const openRenameDialog = () => {
+    setNewName(repo.name);
+    setShowRenameDialog(true);
+  };
+
   return (
     <>
       <div className="card-minimal p-4 group transition-all">
@@ -83,6 +117,10 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={openRenameDialog}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Rename
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleToggleVisibility} disabled={isUpdatingVisibility}>
                 {repo.private ? (
                   <>
@@ -138,6 +176,50 @@ export function RepoCard({ repo, onUpdate }: RepoCardProps) {
         </div>
       </div>
 
+      {/* Rename Dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Repository</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the repository.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="repo-name" className="text-sm font-medium">
+              New name
+            </Label>
+            <Input
+              id="repo-name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Enter new name"
+              className="mt-2"
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRename} 
+              disabled={isRenaming || !newName.trim() || newName === repo.name}
+            >
+              {isRenaming ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Renaming...
+                </>
+              ) : (
+                'Rename'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

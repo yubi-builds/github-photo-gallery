@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
@@ -11,8 +11,8 @@ import {
   getRepoContents, 
   ImageFile, 
   RepoContent, 
-  downloadFile, 
-  downloadMultipleFiles,
+  downloadFileAuthenticated, 
+  downloadMultipleFilesAuthenticated,
   deleteFile
 } from '@/lib/github';
 import { 
@@ -57,7 +57,7 @@ export default function Repository() {
     }
   }, [token, authLoading, navigate]);
 
-  const fetchData = async (showLoading = true) => {
+  const fetchData = useCallback(async (showLoading = true) => {
     if (!token || !owner || !repo) return;
     
     if (showLoading) setIsLoading(true);
@@ -74,9 +74,9 @@ export default function Repository() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, owner, repo]);
 
-  const handleUploaded = (uploadedFiles: { name: string; path: string; localUrl: string }[]) => {
+  const handleUploaded = useCallback((uploadedFiles: { name: string; path: string; localUrl: string }[]) => {
     // Immediately add uploaded images to UI with local URLs
     const newImages: ImageFile[] = uploadedFiles.map((file, index) => ({
       name: file.name,
@@ -90,15 +90,15 @@ export default function Repository() {
     
     setImages(prev => [...newImages, ...prev]);
     
-    // Background refresh to get real data after a short delay
-    setTimeout(() => fetchData(false), 2000);
-  };
+    // Background refresh to get real data
+    setTimeout(() => fetchData(false), 1500);
+  }, [fetchData]);
 
   useEffect(() => {
     if (token && owner && repo) {
       fetchData();
     }
-  }, [token, owner, repo]);
+  }, [token, owner, repo, fetchData]);
 
   const toggleImageSelection = (image: ImageFile) => {
     const newSelection = new Set(selectedImages);
@@ -119,24 +119,34 @@ export default function Repository() {
   };
 
   const handleSingleDownload = async (image: ImageFile) => {
-    if (image.download_url) {
-      try {
-        await downloadFile(image.download_url, image.name, token || undefined);
-        toast.success(`Downloaded ${image.name}`);
-      } catch {
-        toast.error('Failed to download');
-      }
+    if (!token || !owner || !repo) return;
+    
+    try {
+      await downloadFileAuthenticated(token, owner, repo, image.path, image.sha, image.name);
+      toast.success(`Downloaded ${image.name}`);
+    } catch {
+      toast.error('Failed to download');
     }
   };
 
   const handleBulkDownload = async () => {
+    if (!token || !owner || !repo) return;
+    
     const selectedFiles = images.filter(img => selectedImages.has(img.sha));
     if (selectedFiles.length === 0) return;
 
     setIsDownloading(true);
     try {
-      await downloadMultipleFiles(selectedFiles, token || undefined);
-      toast.success(`Downloaded ${selectedFiles.length} files`);
+      const { success, failed } = await downloadMultipleFilesAuthenticated(token, owner, repo, selectedFiles);
+      
+      if (failed === 0) {
+        toast.success(`Downloaded ${success} files`);
+      } else if (success > 0) {
+        toast.warning(`Downloaded ${success} files, ${failed} failed`);
+      } else {
+        toast.error('Failed to download files');
+      }
+      
       setSelectedImages(new Set());
     } catch {
       toast.error('Failed to download');
@@ -151,11 +161,24 @@ export default function Repository() {
     setIsDeleting(true);
     try {
       await deleteFile(token, owner, repo, deleteTarget.path, deleteTarget.sha, `Delete ${deleteTarget.name}`);
+      
+      // Optimistic UI update - remove from state immediately
+      setImages(prev => prev.filter(img => img.sha !== deleteTarget.sha));
+      setSelectedImages(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(deleteTarget.sha);
+        return newSet;
+      });
+      
       toast.success(`Deleted ${deleteTarget.name}`);
       setDeleteTarget(null);
-      fetchData();
+      
+      // Background refresh to ensure consistency
+      setTimeout(() => fetchData(false), 1000);
     } catch (error) {
       toast.error('Failed to delete');
+      // Refresh on error to restore correct state
+      fetchData(false);
     } finally {
       setIsDeleting(false);
     }

@@ -98,6 +98,13 @@ export async function updateRepoVisibility(token: string, owner: string, repo: s
   });
 }
 
+export async function renameRepo(token: string, owner: string, oldName: string, newName: string): Promise<Repository> {
+  return fetchWithAuth(`${API_BASE}/repos/${owner}/${oldName}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ name: newName }),
+  });
+}
+
 export async function getRepoContents(token: string, owner: string, repo: string, path: string = ''): Promise<RepoContent[]> {
   const url = path 
     ? `${API_BASE}/repos/${owner}/${repo}/contents/${path}`
@@ -171,9 +178,95 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+export async function downloadFileAuthenticated(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  sha: string,
+  filename: string
+): Promise<void> {
+  try {
+    // Fetch the blob content via GitHub API for authenticated access
+    const response = await fetch(`${API_BASE}/repos/${owner}/${repo}/git/blobs/${sha}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch file');
+    }
+
+    const data = await response.json();
+    const base64Content = data.content.replace(/\n/g, '');
+    
+    // Determine MIME type from filename
+    const ext = filename.split('.').pop()?.toLowerCase() || 'png';
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      bmp: 'image/bmp',
+      ico: 'image/x-icon',
+    };
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+    // Convert base64 to blob and download
+    const byteCharacters = atob(base64Content);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Download error:', error);
+    throw error;
+  }
+}
+
+export async function downloadMultipleFilesAuthenticated(
+  token: string,
+  owner: string,
+  repo: string,
+  files: ImageFile[]
+): Promise<{ success: number; failed: number }> {
+  let success = 0;
+  let failed = 0;
+  
+  for (const file of files) {
+    try {
+      await downloadFileAuthenticated(token, owner, repo, file.path, file.sha, file.name);
+      success++;
+      // Small delay between downloads to prevent rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch {
+      failed++;
+    }
+  }
+  
+  return { success, failed };
+}
+
+// Legacy function for backward compatibility
 export async function downloadFile(url: string, filename: string, token?: string): Promise<void> {
   const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
   const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Download failed');
   const blob = await response.blob();
   const blobUrl = URL.createObjectURL(blob);
   
