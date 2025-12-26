@@ -22,9 +22,14 @@ export function ImagePreviewDialog({ image, images, owner, repo, onClose, onNavi
   
   if (!image) return null;
 
-  const currentIndex = images.findIndex(img => img.sha === image.sha);
+  // Filter out any duplicates by path to ensure unique images
+  const uniqueImages = images.filter((img, index, self) => 
+    index === self.findIndex(i => i.path === img.path)
+  );
+
+  const currentIndex = uniqueImages.findIndex(img => img.path === image.path);
   const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex < images.length - 1;
+  const hasNext = currentIndex < uniqueImages.length - 1;
 
   const handleDownload = () => {
     if (image.download_url) {
@@ -34,13 +39,13 @@ export function ImagePreviewDialog({ image, images, owner, repo, onClose, onNavi
 
   const handlePrev = () => {
     if (hasPrev) {
-      onNavigate(images[currentIndex - 1]);
+      onNavigate(uniqueImages[currentIndex - 1]);
     }
   };
 
   const handleNext = () => {
     if (hasNext) {
-      onNavigate(images[currentIndex + 1]);
+      onNavigate(uniqueImages[currentIndex + 1]);
     }
   };
 
@@ -53,7 +58,7 @@ export function ImagePreviewDialog({ image, images, owner, repo, onClose, onNavi
             <div className="flex items-center gap-3">
               <p className="text-sm font-medium truncate max-w-[300px]">{image.name}</p>
               <span className="text-xs text-muted-foreground">
-                {currentIndex + 1} / {images.length}
+                {currentIndex + 1} / {uniqueImages.length}
               </span>
             </div>
             <div className="flex items-center gap-2">
