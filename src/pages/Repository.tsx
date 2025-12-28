@@ -22,7 +22,8 @@ import {
   ImageIcon, 
   ChevronLeft, 
   CheckSquare, 
-  Square
+  Square,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -48,7 +49,9 @@ export default function Repository() {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState<ImageFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ImageFile | null>(null);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -177,6 +180,42 @@ export default function Repository() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!token || !owner || !repo || selectedImages.size === 0) return;
+
+    const selectedFiles = images.filter(img => selectedImages.has(img.sha));
+    setIsBulkDeleting(true);
+    
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of selectedFiles) {
+      try {
+        await deleteFile(token, owner, repo, file.path, file.sha, `Delete ${file.name}`);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    // Update state after all deletions
+    if (successCount > 0) {
+      setImages(prev => prev.filter(img => !selectedImages.has(img.sha)));
+      setSelectedImages(new Set());
+    }
+
+    if (failCount === 0) {
+      toast.success(`Deleted ${successCount} files`);
+    } else if (successCount > 0) {
+      toast.warning(`Deleted ${successCount} files, ${failCount} failed`);
+    } else {
+      toast.error('Failed to delete files');
+    }
+
+    setBulkDeleteConfirm(false);
+    setIsBulkDeleting(false);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -208,19 +247,30 @@ export default function Repository() {
           
           <div className="flex items-center gap-2">
             {selectedImages.size > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleBulkDownload}
-                disabled={isDownloading}
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Download ({selectedImages.size})
-              </Button>
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setBulkDeleteConfirm(true)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete ({selectedImages.size})
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleBulkDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Download ({selectedImages.size})
+                </Button>
+              </>
             )}
             <Button size="sm" onClick={() => setShowUploadDialog(true)}>
               <Upload className="h-4 w-4" />
@@ -323,6 +373,28 @@ export default function Repository() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedImages.size} Images</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedImages.size} selected images? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? 'Deleting...' : `Delete ${selectedImages.size} images`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
