@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadFile, fileToBase64, getRepoContents, RepoContent } from '@/lib/github';
+import { uploadFile, fileToBase64, RepoContent, UploadResult, ImageFile } from '@/lib/github';
 import {
   Dialog,
   DialogContent,
@@ -23,19 +23,13 @@ import { toast } from 'sonner';
 import { Loader2, Upload, FolderPlus, Image as ImageIcon, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
-interface UploadedFile {
-  name: string;
-  path: string;
-  localUrl: string;
-}
-
 interface UploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   owner: string;
   repo: string;
   folders: RepoContent[];
-  onUploaded: (uploadedFiles: UploadedFile[]) => void;
+  onUploaded: (uploadedFiles: ImageFile[]) => void;
 }
 
 export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploaded }: UploadDialogProps) {
@@ -66,7 +60,7 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
     setIsUploading(true);
     setUploadProgress(0);
 
-    const uploadedFiles: UploadedFile[] = [];
+    const uploadedFiles: ImageFile[] = [];
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -74,11 +68,7 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
         const base64 = await fileToBase64(file);
         const path = folderPath ? `${folderPath}/${file.name}` : file.name;
         
-        // Create local URL for immediate display
-        const localUrl = URL.createObjectURL(file);
-        uploadedFiles.push({ name: file.name, path, localUrl });
-        
-        await uploadFile(
+        const result = await uploadFile(
           token,
           owner,
           repo,
@@ -86,6 +76,17 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
           base64,
           `Upload ${file.name}`
         );
+        
+        // Use the actual response from GitHub API
+        uploadedFiles.push({
+          name: result.content.name,
+          path: result.content.path,
+          sha: result.content.sha,
+          size: result.content.size,
+          type: 'file' as const,
+          download_url: result.content.download_url,
+          html_url: result.content.html_url,
+        });
         
         setUploadProgress(((i + 1) / files.length) * 100);
       }
@@ -99,8 +100,6 @@ export function UploadDialog({ open, onOpenChange, owner, repo, folders, onUploa
       setCreateNewFolder(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload files');
-      // Revoke any created URLs on error
-      uploadedFiles.forEach(f => URL.revokeObjectURL(f.localUrl));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
