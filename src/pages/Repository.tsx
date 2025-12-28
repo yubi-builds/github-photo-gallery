@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
@@ -23,7 +23,10 @@ import {
   ChevronLeft, 
   CheckSquare, 
   Square,
-  Trash2
+  Trash2,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -36,6 +39,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+
+interface FolderGroup {
+  path: string;
+  name: string;
+  images: ImageFile[];
+}
 
 export default function Repository() {
   const { owner, repo } = useParams<{ owner: string; repo: string }>();
@@ -53,6 +67,42 @@ export default function Repository() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+
+  // Group images by folder
+  const folderGroups = useMemo((): FolderGroup[] => {
+    const groups = new Map<string, ImageFile[]>();
+    
+    images.forEach(image => {
+      const pathParts = image.path.split('/');
+      const folderPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : '';
+      
+      if (!groups.has(folderPath)) {
+        groups.set(folderPath, []);
+      }
+      groups.get(folderPath)!.push(image);
+    });
+
+    return Array.from(groups.entries())
+      .map(([path, imgs]) => ({
+        path,
+        name: path || 'Root',
+        images: imgs
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path));
+  }, [images]);
+
+  const toggleFolderCollapse = (folderPath: string) => {
+    setCollapsedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderPath)) {
+        newSet.delete(folderPath);
+      } else {
+        newSet.add(folderPath);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && !token) {
@@ -80,10 +130,8 @@ export default function Repository() {
   }, [token, owner, repo]);
 
   const handleUploaded = useCallback((uploadedFiles: ImageFile[]) => {
-    // Immediately add the uploaded images to the UI using data from GitHub API response
     setImages(prev => [...uploadedFiles, ...prev]);
     
-    // Also refresh folders in case new folders were created
     if (token && owner && repo) {
       getRepoContents(token, owner, repo)
         .then(contentsData => {
@@ -115,6 +163,21 @@ export default function Repository() {
     } else {
       setSelectedImages(new Set(images.map(img => img.sha)));
     }
+  };
+
+  const selectAllInFolder = (folderImages: ImageFile[]) => {
+    const folderShas = folderImages.map(img => img.sha);
+    const allSelected = folderShas.every(sha => selectedImages.has(sha));
+    
+    setSelectedImages(prev => {
+      const newSet = new Set(prev);
+      if (allSelected) {
+        folderShas.forEach(sha => newSet.delete(sha));
+      } else {
+        folderShas.forEach(sha => newSet.add(sha));
+      }
+      return newSet;
+    });
   };
 
   const handleSingleDownload = async (image: ImageFile) => {
@@ -161,7 +224,6 @@ export default function Repository() {
     try {
       await deleteFile(token, owner, repo, deleteTarget.path, deleteTarget.sha, `Delete ${deleteTarget.name}`);
       
-      // Remove from state - API succeeded so no refresh needed
       setImages(prev => prev.filter(img => img.sha !== deleteTarget.sha));
       setSelectedImages(prev => {
         const newSet = new Set(prev);
@@ -173,7 +235,6 @@ export default function Repository() {
       setDeleteTarget(null);
     } catch (error) {
       toast.error('Failed to delete');
-      // Refresh on error to restore correct state
       fetchData(false);
     } finally {
       setIsDeleting(false);
@@ -198,7 +259,6 @@ export default function Repository() {
       }
     }
 
-    // Update state after all deletions
     if (successCount > 0) {
       setImages(prev => prev.filter(img => !selectedImages.has(img.sha)));
       setSelectedImages(new Set());
@@ -240,7 +300,7 @@ export default function Repository() {
             <div>
               <h1 className="text-xl font-semibold">{repo}</h1>
               <p className="text-sm text-muted-foreground">
-                {images.length} {images.length === 1 ? 'image' : 'images'}
+                {images.length} {images.length === 1 ? 'image' : 'images'} in {folderGroups.length} {folderGroups.length === 1 ? 'folder' : 'folders'}
               </p>
             </div>
           </div>
@@ -298,26 +358,81 @@ export default function Repository() {
           </div>
         )}
 
-        {/* Images grid */}
+        {/* Folder-wise images */}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : images.length > 0 ? (
-          <div className="image-grid">
-            {images.map((image) => (
-              <ImageCard
-                key={image.sha}
-                image={image}
-                owner={owner!}
-                repo={repo!}
-                isSelected={selectedImages.has(image.sha)}
-                onSelect={toggleImageSelection}
-                onDownload={handleSingleDownload}
-                onDelete={setDeleteTarget}
-                onPreview={setPreviewImage}
-              />
-            ))}
+          <div className="space-y-6">
+            {folderGroups.map((group) => {
+              const isCollapsed = collapsedFolders.has(group.path);
+              const folderShas = group.images.map(img => img.sha);
+              const allSelected = folderShas.every(sha => selectedImages.has(sha));
+              const someSelected = folderShas.some(sha => selectedImages.has(sha));
+              
+              return (
+                <Collapsible
+                  key={group.path}
+                  open={!isCollapsed}
+                  onOpenChange={() => toggleFolderCollapse(group.path)}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 px-2">
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      <span>{group.name}</span>
+                      <span className="text-muted-foreground font-normal">
+                        ({group.images.length} {group.images.length === 1 ? 'image' : 'images'})
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectAllInFolder(group.images);
+                      }}
+                      className="h-6 px-2 text-xs ml-auto"
+                    >
+                      {allSelected ? (
+                        <CheckSquare className="h-3 w-3 mr-1" />
+                      ) : someSelected ? (
+                        <Square className="h-3 w-3 mr-1 opacity-50" />
+                      ) : (
+                        <Square className="h-3 w-3 mr-1" />
+                      )}
+                      {allSelected ? 'Deselect' : 'Select'}
+                    </Button>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="image-grid">
+                      {group.images.map((image) => (
+                        <ImageCard
+                          key={image.sha}
+                          image={image}
+                          owner={owner!}
+                          repo={repo!}
+                          isSelected={selectedImages.has(image.sha)}
+                          onSelect={toggleImageSelection}
+                          onDownload={handleSingleDownload}
+                          onDelete={setDeleteTarget}
+                          onPreview={setPreviewImage}
+                        />
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16">
