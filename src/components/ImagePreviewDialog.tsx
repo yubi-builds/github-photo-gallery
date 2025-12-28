@@ -1,3 +1,4 @@
+import { useEffect, useCallback } from 'react';
 import { ImageFile, downloadFile } from '@/lib/github';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthenticatedImage } from '@/components/AuthenticatedImage';
@@ -20,34 +21,55 @@ interface ImagePreviewDialogProps {
 export function ImagePreviewDialog({ image, images, owner, repo, onClose, onNavigate }: ImagePreviewDialogProps) {
   const { token } = useAuth();
   
-  if (!image) return null;
-
   // Filter out any duplicates by path to ensure unique images
   const uniqueImages = images.filter((img, index, self) => 
     index === self.findIndex(i => i.path === img.path)
   );
 
-  const currentIndex = uniqueImages.findIndex(img => img.path === image.path);
+  const currentIndex = image ? uniqueImages.findIndex(img => img.path === image.path) : -1;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < uniqueImages.length - 1;
 
-  const handleDownload = () => {
-    if (image.download_url) {
+  const handleDownload = useCallback(() => {
+    if (image?.download_url) {
       downloadFile(image.download_url, image.name, token || undefined);
     }
-  };
+  }, [image, token]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (hasPrev) {
       onNavigate(uniqueImages[currentIndex - 1]);
     }
-  };
+  }, [hasPrev, currentIndex, uniqueImages, onNavigate]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (hasNext) {
       onNavigate(uniqueImages[currentIndex + 1]);
     }
-  };
+  }, [hasNext, currentIndex, uniqueImages, onNavigate]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!image) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [image, handlePrev, handleNext, onClose]);
+
+  if (!image) return null;
 
   return (
     <Dialog open={!!image} onOpenChange={() => onClose()}>
