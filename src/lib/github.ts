@@ -130,6 +130,18 @@ export async function getAllImages(token: string, owner: string, repo: string, p
   return images;
 }
 
+export interface UploadResult {
+  content: {
+    name: string;
+    path: string;
+    sha: string;
+    size: number;
+    type: string;
+    download_url: string;
+    html_url: string;
+  };
+}
+
 export async function uploadFile(
   token: string, 
   owner: string, 
@@ -137,8 +149,8 @@ export async function uploadFile(
   path: string, 
   content: string, 
   message: string
-): Promise<void> {
-  await fetchWithAuth(`${API_BASE}/repos/${owner}/${repo}/contents/${path}`, token, {
+): Promise<UploadResult> {
+  return fetchWithAuth(`${API_BASE}/repos/${owner}/${repo}/contents/${path}`, token, {
     method: 'PUT',
     body: JSON.stringify({
       message,

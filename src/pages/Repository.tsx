@@ -76,31 +76,18 @@ export default function Repository() {
     }
   }, [token, owner, repo]);
 
-  const handleUploaded = useCallback((uploadedFiles: { name: string; path: string; localUrl: string }[]) => {
-    // Immediately add uploaded images to UI with local URLs
-    const newImages: ImageFile[] = uploadedFiles.map((file, index) => ({
-      name: file.name,
-      path: file.path,
-      sha: `temp-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-      size: 0,
-      type: 'file' as const,
-      download_url: file.localUrl,
-      html_url: '',
-    }));
+  const handleUploaded = useCallback((uploadedFiles: ImageFile[]) => {
+    // Immediately add the uploaded images to the UI using data from GitHub API response
+    setImages(prev => [...uploadedFiles, ...prev]);
     
-    setImages(prev => [...newImages, ...prev]);
-    
-    // Background refresh to get real data - replace temp images with real ones
-    setTimeout(async () => {
-      if (!token || !owner || !repo) return;
-      try {
-        const imagesData = await getAllImages(token, owner, repo);
-        // Replace all images to avoid duplicates
-        setImages(imagesData);
-      } catch (error) {
-        console.error('Failed to refresh images', error);
-      }
-    }, 2000);
+    // Also refresh folders in case new folders were created
+    if (token && owner && repo) {
+      getRepoContents(token, owner, repo)
+        .then(contentsData => {
+          setFolders(contentsData.filter(item => item.type === 'dir'));
+        })
+        .catch(() => {});
+    }
   }, [token, owner, repo]);
 
   useEffect(() => {
