@@ -113,7 +113,7 @@
 
 @layer components {
   .card-minimal {
-    @apply bg-card border border-border rounded-lg;
+    @apply bg-card/80 border border-border/50 rounded-lg backdrop-blur-sm;
     box-shadow: var(--shadow-sm);
   }
 
@@ -146,6 +146,44 @@
 
   .glacier-border {
     border-color: hsl(var(--glacier-mid));
+  }
+
+  /* Frosted glass effects */
+  .glass {
+    @apply bg-card/70 backdrop-blur-md border border-border/40;
+    box-shadow: 
+      0 4px 24px -1px hsl(var(--primary) / 0.06),
+      0 0 1px 0 hsl(var(--border) / 0.8),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+  }
+
+  .glass-light {
+    @apply bg-background/60 backdrop-blur-sm border border-border/30;
+    box-shadow: 
+      0 2px 12px -1px hsl(var(--primary) / 0.04),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.08);
+  }
+
+  .glass-heavy {
+    @apply bg-card/85 backdrop-blur-xl border border-border/50;
+    box-shadow: 
+      0 8px 32px -4px hsl(var(--primary) / 0.1),
+      0 0 1px 0 hsl(var(--border) / 0.6),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
+  }
+
+  .glass-card {
+    @apply bg-card/75 backdrop-blur-md border border-glacier-mid/30 rounded-lg;
+    box-shadow: 
+      0 4px 20px -2px hsl(var(--primary) / 0.08),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+  }
+
+  .glass-card:hover {
+    @apply border-glacier-mid/50;
+    box-shadow: 
+      0 8px 28px -4px hsl(var(--primary) / 0.12),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.08);
   }
 }
 
