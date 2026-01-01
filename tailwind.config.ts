@@ -50,6 +50,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        glacier: {
+          light: "hsl(var(--glacier-light))",
+          mid: "hsl(var(--glacier-mid))",
+          deep: "hsl(var(--glacier-deep))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
